@@ -22,6 +22,7 @@ Other tasks
 
  * Clean up code
  * Tag handling
+ * Add testing code
  * Chicken egg
 
 About
