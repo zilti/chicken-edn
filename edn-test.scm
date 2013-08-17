@@ -4,6 +4,8 @@
   '(("1234" . (1234))
     (":abc" . (abc:))
     ("\"Hello World!\"" . ("Hello World!"))
+    ("(inc 5)" . (#\( inc 5 #\)))
+    ("#asdf/rdr" . ((edn/reader-tag: . "#asdf/rdr")))
     ("\"Does \\\"this\\\" work?\"" . ("Does \"this\" work?"))
     ("(1234 {:Hi \"I'm a map.\" :confuse \"(1234)\"})" . (#\( 1234 #\{ Hi: "I'm a map." confuse: "(1234)" #\} #\)))))
 

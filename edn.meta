@@ -1,0 +1,9 @@
+;;; -*- scheme -*-
+
+((egg "edn.egg")
+ (synopsis "EDN data reader/writer")
+ (author "Daniel Ziltener")
+ (category parsing)
+ (license "BSD")
+ (doc-from-wiki)
+ (test-depends missbehave))
