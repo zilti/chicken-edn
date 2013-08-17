@@ -1,6 +1,5 @@
 (require-extension srfi-13)
 (require-extension srfi-1)
-(require-extension irregex)
 
 (define handlers '())
 (define empty-delimiters (list #\,))
@@ -9,33 +8,26 @@
 (define map-delimiters (list #\{ #\}))
 (define seq-delimiters (append list-delimiters vector-delimiters map-delimiters (list)))
 
-(define (register-handler tag fn))
-(define (remove-handler tag))
+;;(define (register-handler tag fn))
+;;(define (remove-handler tag))
 
-(define keyword-regex (irregex ""))
 (define (parse-keyword in)
-  (string->keyword (substring/shared in 1 (string-length in))))
+  (string->keyword (substring in 1 (string-length in))))
 
 (define (parse-character in)
   (string-concatenate (list "#" in)))
 
-
-(define float-regex (irregex ""))
-(define exact-float-regex (irregex ""))
-(define integer-regex (irregex ""))
-(define arbitrary-integer-regex (irregex ""))
 (define (parse-number in)
   (string->number
    (cond ((string-suffix? "N" in) (substring in 0 (- (string-length in) 1)))
          ((string-suffix? "M" in) (substring in 0 (- (string-length in) 1)))
          (else in))))
 
-(define (construct-list . in))
-(define (construct-vector . in))
-(define (construct-map . in))
-(define (construct-set . in))
+;;(define (construct-list . in))
+;;(define (construct-vector . in))
+;;(define (construct-map . in))
+;;(define (construct-set . in))
 
-(define (parse-sequence in))
 (define (call/cc=< fn . args)
   (call/cc (lambda (cc)
              (apply fn (cons cc args)))))
@@ -54,11 +46,11 @@
        (keyword-cache (list))
        (out (list))
        (next #f)
-       (in (string->list in))]
-      ((null-list? in) (reverse out))
+       (in (string->list (string-append in " ")))]
+      ((null-list? in)
+       (reverse out))
     (set! next (car in))
     (set! in (cdr in))
-    (display (string-append "Next char: " (->string next) "\n"))
     (cond
      ;; Sequence filling / termination
      (in-string? (cond ((char=? next #\") (begin (set! in-string? #f)
@@ -89,7 +81,8 @@
      ((char-whitespace? next) #f)
      (else (set! out (cons next out))))))
 
-(define (read-edn-string string))
-(define (read-edn-file file))
-(define (write-edn-string string))
-(define (write-edn-file file))
+;;(define (read-edn-string string))
+;;(define (read-edn-file file))
+;;(define (write-edn-string string))
+;;(define (write-edn-file file))
+
