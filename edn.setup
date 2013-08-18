@@ -1,7 +1,9 @@
 ;;; -*- scheme -*-
 
-(include "setup-helper")
+(compile -s -O2 -d1 edn.scm -j edn)
+(compile -s edn.import.scm -O2 -d0)
 
-(setup-shared-extension-module
+(install-extension
  'edn
- (extension-version "0.2"))
+ '("edn.so" "edn.import.so")
+ '((version "0.2")))

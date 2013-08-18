@@ -1,9 +1,9 @@
 (module edn
   (
-   edn-read-string edn-tokenize edn-parse-tokenlist
+   edn-read-file edn-read-string edn-tokenize edn-parse-tokenlist
   )
 
-  (import chicken scheme data-structures)
+  (import chicken scheme extras data-structures)
   (require-extension srfi-1 srfi-13 srfi-69)
 
   ;; EDN Reading
@@ -192,7 +192,8 @@
 
   (define (edn-read-string string)
     (edn-parse-tokenlist (edn-tokenize string)))
-  ;;(define (read-edn-file file))
+  (define (edn-read-file file)
+    (for-each edn-read-string (call-with-input-file read-file)))
   ;;(define (write-edn-string string))
   ;;(define (write-edn-file file))
   

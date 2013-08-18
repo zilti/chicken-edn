@@ -5,5 +5,4 @@
  (author "Daniel Ziltener")
  (category parsing)
  (license "BSD")
- (doc-from-wiki)
- (test-depends missbehave))
+ (test-depends test))
