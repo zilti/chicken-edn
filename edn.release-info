@@ -1,0 +1,5 @@
+;;; -*- scheme -*-
+
+(repo git "git://github.com/zilti/chicken-edn.git")
+(uri targz "https://github.com/zilti/chicken-edn/tarball/{egg-release}")
+(release "0.2")

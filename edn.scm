@@ -1,163 +1,200 @@
-(require-extension srfi-13)
-(require-extension srfi-1)
+(module edn
+  (
+   edn-read-string edn-tokenize edn-parse-tokenlist
+  )
 
-(define handlers (list))
-(define empty-delimiters (list #\, #\space))
-(define list-delimiters (list #\( #\)))
-(define vector-delimiters (list #\[ #\]))
-(define map-delimiters (list #\{ #\}))
-(define seq-delimiters (append list-delimiters vector-delimiters map-delimiters (list)))
+  (import chicken scheme data-structures)
+  (require-extension srfi-1 srfi-13 srfi-69)
 
-(define (edn-register-handler tag fn)
-  (set! handlers (cons (cons tag fn) handlers)))
+  ;; EDN Reading
+  (define handlers (list))
+  (define empty-delimiters (list #\, #\space))
+  (define list-delimiters (list #\( #\)))
+  (define vector-delimiters (list #\[ #\]))
+  (define map-delimiters (list #\{ #\}))
+  (define seq-delimiters (append list-delimiters vector-delimiters map-delimiters (list)))
 
-(define (edn-remove-handler tag)
-  (set! handlers (foldr (lambda (e l) (cond [(equal? (car e) tag) l]
-                                            (else (cons e l))))
-                        (list) handlers)))
+  (define (edn-register-handler tag fn)
+    (set! handlers (cons (cons tag fn) handlers)))
 
-;; Collection construction
-(define (construct-list in)
-  (foldr (lambda (init elem)
-           (cons elem init))
-         (list) in))
+  (define (edn-remove-handler tag)
+    (set! handlers (foldr (lambda (e l) (cond [(equal? (car e) tag) l]
+                                              (else (cons e l))))
+                          (list) handlers)))
 
-(define (construct-vector in)
-  (list->vector (construct-list in)))
+  ;; Collection construction
+  (define (construct-list in)
+    (begin
+      (display (string-append "(construct-list " (->string in) ")\n"))
+      (foldr (lambda (elem init)
+               (cons elem init))
+             (list) in)))
 
-(define (construct-map in)
-  (do [(stuff in)
-       (alist (list))]
-      [(list-null? stuff) alist]
-    (set! alist (cons (cons (caar stuff) (cdar stuff)) alist))
-    (set! stuff (cdr stuff))))
+  (define (construct-vector in)
+    (list->vector (construct-list in)))
 
-(define construct-set construct-list)
+  (define (construct-map in)
+    (display (string-append "(construct-map " (->string in) ")\n"))
+    (do [(stuff in)
+         (alist (list))]
+        [(> 2 (length stuff)) alist]
+      (set! alist (alist-update (car stuff) (cadr stuff) alist))
+      (set! stuff (cddr stuff))))
 
-(define (apply-tag tag struct))
+  (define construct-set construct-list)
 
-;; Token list parsing
-(define (parse-tokenlist tl)
-  (do [(colltype #f)
-       (in (append tl #\space))
-       (out (list))
-       (cache (list))
-       (tag #f)
-       (token #f)]
-      [(list-null? in) (reverse out)]
-    (set! token (car in))
-    (set! out (cdr out))
-    (cond [(not colltype) (case token
-                              [(#\() (set! colltype list:)]
-                            [(#\[) (set! colltype vector:)]
-                            [(#\{) (cond [(= colltype pre-set:) (set! colltype set:)]
-                                         [else (set! colltype map:)])]
-                            [(#\#) (cond [(char=? #\{ (car in)) (set! colltype pre-set:)]
-                                         [else (error "Invalid EDN.")])]
-                            [else (error "Invalid EDN. Data outside a collection form.")])]
-          [else (case token
-                  [(#\( #\[ #\{) ;; Use counter to count opening and closing braces; Extract sub-element and recurse.
-                   ]
-                  [(#\)) (begin (set! out (cons (construct-list (reverse cache)) out))
-                                (set! cache (list))
-                                (set! colltype #f))]
-                  [(#\]) (begin (set! out (cons (construct-vector (reverse cache)) out))
-                                (set! cache (list))
-                                (set! colltype #f))]
-                  [(#\}) (begin (set! out (cons (cond [(= colltype set:) (construct-list (reverse cache))]
-                                                      [else (construct-map (reverse-cache))]) out))
-                                (set! cache (list))
-                                (set! colltype #f))]
-                  [else (cond [(list? token) (cond [(eq? (string->symbol "#edn/read") (car token)) (begin (set! tag (cdr token)))]
-                                                   [else (error "Invalid EDN.")])]
-                              [else (set! out (cons token out))])])])))
+  ;;(define (apply-tag tag struct))
 
-;; Tokenizing and helper functions
-(define (parse-keyword in)
-  (string->keyword (substring in 1 (string-length in))))
+  ;; Token list parsing
+  (define (edn-parse-tokenlist tl)
+    (do [(colltype #f)
+         (in (reverse (cons #\space (reverse tl))))
+         (out (list))
+         (cache (list))
+         (tag #f)
+         (token #f)]
+        [(null-list? in) (car (reverse out))]
+      (set! token (car in))
+      (set! in (cdr in))
+      (case colltype
+        [(#f pre-set:)
+         (set! colltype
+               (case token
+                 [(#\() list:]
+                 [(#\[) vector:]
+                 [(#\{) (cond [(eq? colltype pre-set:) set:]
+                              [else map:])]
+                 [(#\#) (cond [(char=? #\{ (car in)) pre-set:]
+                              [else (error "Invalid EDN.")])]
+                 [else (cond [(char-whitespace? token)]
+                             [else (error (string-append "Invalid EDN. Data outside a collection form: " (->string token) " (colltype: " (->string colltype) ")\n"))])]))]
+        [else (case token
+                [(#\( #\[ #\{) (set! cache (cons 
+                                            (edn-parse-tokenlist
+                                             (do [(sublist (list))
+                                                  (inp (cons token in))
+                                                  (fst #t)
+                                                  (counter '((#\( . 0) (#\[ . 0) (#\{ . 0)))]
+                                                 [(and (not fst)
+                                                       (eq? 0 (alist-ref #\( counter))
+                                                       (eq? 0 (alist-ref #\[ counter))
+                                                       (eq? 0 (alist-ref #\{ counter)))
+                                                  (set! in inp)
+                                                  (reverse sublist)]
+                                               (set! fst #f)
+                                               (case (car inp)
+                                                 [(#\() (set! counter (alist-update #\( (+ 1 (alist-ref #\( counter)) counter))]
+                                                 [(#\[) (set! counter (alist-update #\[ (+ 1 (alist-ref #\[ counter)) counter))]
+                                                 [(#\{) (set! counter (alist-update #\{ (+ 1 (alist-ref #\{ counter)) counter))]
+                                                 [(#\)) (set! counter (alist-update #\( (- (alist-ref #\( counter) 1) counter))]
+                                                 [(#\]) (set! counter (alist-update #\[ (- (alist-ref #\[ counter) 1) counter))]
+                                                 [(#\}) (set! counter (alist-update #\{ (- (alist-ref #\{ counter) 1) counter))])
+                                               (set! sublist (cons (car inp) sublist))
+                                               (set! inp (cdr inp))))
+                                            cache))]
+                [(#\)) (begin (set! out (cons (construct-list (reverse cache)) out))
+                              (set! cache (list))
+                              (set! colltype #f))]
+                [(#\]) (begin (set! out (cons (construct-vector (reverse cache)) out))
+                              (set! cache (list))
+                              (set! colltype #f))]
+                [(#\}) (begin (set! out (cons (cond [(eq? colltype set:) (construct-list (reverse cache))]
+                                                    [else (construct-map (reverse cache))]) out))
+                              (set! cache (list))
+                              (set! colltype #f))]
+                [else (cond [(list? token) (cond [(eq? edn/reader-tag: (car token)) (begin (set! tag (cdr token)))]
+                                                 [else (error "Invalid EDN.")])]
+                            [(and (char? token) (char-whitespace? token))]
+                            [else (set! cache (cons token cache))])])])))
 
-(define (parse-number in)
-  (string->number
-   (cond ((string-suffix? "N" in) (substring in 0 (- (string-length in) 1)))
-         ((string-suffix? "M" in) (substring in 0 (- (string-length in) 1)))
-         (else in))))
+  ;; Tokenizing and helper functions
+  (define (parse-keyword in)
+    (string->keyword (substring in 1 (string-length in))))
 
-(define (char-contains? c chars)
-  (let [(c? #f)]
-    (map (lambda (in) (cond ([char=? c in]
-                             (set! c? #t) in)
-                            (else in)))
-         chars)
-    c?))
+  (define (parse-number in)
+    (string->number
+     (cond ((string-suffix? "N" in) (substring in 0 (- (string-length in) 1)))
+           ((string-suffix? "M" in) (substring in 0 (- (string-length in) 1)))
+           (else in))))
 
-(define (tokenize in)
-  (do [(cur-seq #f)
-       (cache (list))
-       (out (list))
-       (next #f)
-       (cc #f)
-       (in (string->list (string-append in " ")))]
-      ((null-list? in)
-       (reverse out))
-    (set! next (car in))
-    (set! in (cdr in))
-    (set! cur-seq (call/cc (lambda (cont)
-                             (set! cc cont)
-                             cur-seq)))
-    (case cur-seq
-      ;; Sequence filling / termination
-      ((end-string:) (set! cur-seq #f))
-      ((string:) (cond [(and (char=? next #\") (not (char=? #\\ (car cache))))
-                        (begin (set! cur-seq end-string:)
-                               (set! out (cons (reverse-list->string cache) out))
-                               (set! cache (list)))]
-                       ;; Properly insert escaped "
-                       [(and (char=? next #\") (char=? #\\ (car cache)))
-                        (set! cache (cons #\" (cdr cache)))]
-                       [else (set! cache (cons next cache))]))
+  (define (char-contains? c chars)
+    (let [(c? #f)]
+      (map (lambda (in) (cond ([char=? c in]
+                               (set! c? #t) in)
+                              (else in)))
+           chars)
+      c?))
 
-      ((reader-tag:) (cond
-                      [(char-contains? next (append seq-delimiters (list #\space #\,)))
-                       (begin (set! cur-seq #f)
-                              (set! out (cons (string->symbol "#edn/read") (reverse-list->string cache) out))
-                              (set! cache (list)))]
-                      [else (set! cache (cons next cache))]))
-      
-      ((symbol:) (cond
-                  [(char-contains? next (append seq-delimiters (list #\space #\,)))
-                   (begin (set! cur-seq #f)
-                          (set! out (cons (string->symbol (reverse-list->string cache)) out))
-                          (set! cache (list)))]
-                  [else (set! cache (cons next cache))]))
-      
-      ((keyword:) (cond
-                   [(char-contains? next (append seq-delimiters (list #\space #\" #\,)))
-                    (begin (set! cur-seq #f)
-                           (set! out (cons (parse-keyword (reverse-list->string cache)) out))
-                           (set! cache (list)))]
-                   [else (set! cache (cons next cache))]))
-      
-      ((number:) (cond
-                  [(char-contains? next (append seq-delimiters (list #\space #\" #\,)))
-                   (begin (set! cur-seq #f)
-                          (set! out (cons (parse-number (reverse-list->string cache)) out))
-                          (set! cache (list)))]
-                  [else (set! cache (cons next cache))])))
-    ;; Check for collection delimiters
-    (cond [(and (char-contains? next seq-delimiters) (equal? #f cur-seq))
-           (set! out (cons next out))]
-          ;; Check for mode set
-          [else (cond [(equal? #f cur-seq)
-                       (cond [(char=? next #\") (set! cur-seq string:)]
-                             [(char=? next #\:) (cc keyword:)]
-                             [(char=? next #\#) (cc reader-tag:)]
-                             [(char-numeric? next) (cc number:)]
-                             [(char-contains? next empty-delimiters) #f]
-                             [else (cc symbol:)])])])))
+  (define (edn-tokenize in)
+    (do [(cur-seq #f)
+         (cache (list))
+         (out (list))
+         (next #f)
+         (cc #f)
+         (in (string->list (string-append in " ")))]
+        ((null-list? in)
+         (reverse out))
+      (set! next (car in))
+      (set! in (cdr in))
+      (set! cur-seq (call/cc (lambda (cont)
+                               (set! cc cont)
+                               cur-seq)))
+      (case cur-seq
+        ;; Sequence filling / termination
+        ((end-string:) (set! cur-seq #f))
+        ((string:) (cond [(and (char=? next #\") (not (char=? #\\ (car cache))))
+                          (begin (set! cur-seq end-string:)
+                                 (set! out (cons (reverse-list->string cache) out))
+                                 (set! cache (list)))]
+                         ;; Properly insert escaped "
+                         [(and (char=? next #\") (char=? #\\ (car cache)))
+                          (set! cache (cons #\" (cdr cache)))]
+                         [else (set! cache (cons next cache))]))
 
-  ;;(define (read-edn-string string))
+        ((reader-tag:) (cond
+                        [(char-contains? next (append seq-delimiters (list #\space #\,)))
+                         (begin (set! cur-seq #f)
+                                (set! out (cons (cons edn/reader-tag: (reverse-list->string cache)) out))
+                                (set! cache (list)))]
+                        [else (set! cache (cons next cache))]))
+        
+        ((symbol:) (cond
+                    [(char-contains? next (append seq-delimiters (list #\space #\,)))
+                     (begin (set! cur-seq #f)
+                            (set! out (cons (string->symbol (reverse-list->string cache)) out))
+                            (set! cache (list)))]
+                    [else (set! cache (cons next cache))]))
+        
+        ((keyword:) (cond
+                     [(char-contains? next (append seq-delimiters (list #\space #\" #\,)))
+                      (begin (set! cur-seq #f)
+                             (set! out (cons (parse-keyword (reverse-list->string cache)) out))
+                             (set! cache (list)))]
+                     [else (set! cache (cons next cache))]))
+        
+        ((number:) (cond
+                    [(char-contains? next (append seq-delimiters (list #\space #\" #\,)))
+                     (begin (set! cur-seq #f)
+                            (set! out (cons (parse-number (reverse-list->string cache)) out))
+                            (set! cache (list)))]
+                    [else (set! cache (cons next cache))])))
+      ;; Check for collection delimiters
+      (cond [(and (char-contains? next seq-delimiters) (equal? #f cur-seq))
+             (set! out (cons next out))]
+            ;; Check for mode set
+            [else (cond [(equal? #f cur-seq)
+                         (cond [(char=? next #\") (set! cur-seq string:)]
+                               [(char=? next #\:) (cc keyword:)]
+                               [(char=? next #\#) (cc reader-tag:)]
+                               [(char-numeric? next) (cc number:)]
+                               [(char-contains? next empty-delimiters) #f]
+                               [else (cc symbol:)])])])))
+
+  (define (edn-read-string string)
+    (edn-parse-tokenlist (edn-tokenize string)))
   ;;(define (read-edn-file file))
   ;;(define (write-edn-string string))
   ;;(define (write-edn-file file))
   
 
+)

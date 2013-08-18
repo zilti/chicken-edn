@@ -1,0 +1,7 @@
+;;; -*- scheme -*-
+
+(include "setup-helper")
+
+(setup-shared-extension-module
+ 'edn
+ (extension-version "0.2"))
