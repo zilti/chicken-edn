@@ -31,7 +31,7 @@ Other tasks
 Releases
 --------
 
- * **0.2**: Can read EDN-files and -strings. EDN tags are not working yet.
+ * **0.2.1**: Can read EDN-files and -strings. EDN tags are not working yet.
 
 Roadmap
 -------

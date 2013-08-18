@@ -6,4 +6,4 @@
 (install-extension
  'edn
  '("edn.so" "edn.import.so")
- '((version "0.2")))
+ '((version "0.2.1")))
