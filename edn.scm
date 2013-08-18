@@ -3,7 +3,7 @@
    edn-read-file edn-read-string edn-tokenize edn-parse-tokenlist
   )
 
-  (import chicken scheme extras data-structures)
+  (import chicken scheme extras data-structures posix)
   (require-extension srfi-1 srfi-13 srfi-69)
 
   ;; EDN Reading
@@ -24,17 +24,14 @@
 
   ;; Collection construction
   (define (construct-list in)
-    (begin
-      (display (string-append "(construct-list " (->string in) ")\n"))
-      (foldr (lambda (elem init)
-               (cons elem init))
-             (list) in)))
+    (foldr (lambda (elem init)
+             (cons elem init))
+           (list) in))
 
   (define (construct-vector in)
     (list->vector (construct-list in)))
 
   (define (construct-map in)
-    (display (string-append "(construct-map " (->string in) ")\n"))
     (do [(stuff in)
          (alist (list))]
         [(> 2 (length stuff)) alist]
@@ -191,9 +188,33 @@
                                [else (cc symbol:)])])])))
 
   (define (edn-read-string string)
-    (edn-parse-tokenlist (edn-tokenize string)))
+    (do [(in (string->list string))
+         (fst #t)
+         (cache "")
+         (counter '((#\( . 0) (#\[ . 0) (#\{ . 0)))
+         (out (list))]
+        [(null-list? in) (reverse out)]
+      (case (car in)
+        [(#\( #\[ #\{) (set! counter (alist-update (car in) (+ (alist-ref (car in) counter) 1) counter))]
+        [(#\)) (set! counter (alist-update #\( (- (alist-ref #\( counter) 1) counter))]
+        [(#\]) (set! counter (alist-update #\[ (- (alist-ref #\[ counter) 1) counter))]
+        [(#\}) (set! counter (alist-update #\{ (- (alist-ref #\{ counter) 1) counter))])
+      (set! cache (string-append cache (->string (car in))))
+      (case fst
+        [(#t) (set! fst #f)]
+        [else (cond [(and (= 0 (alist-ref #\( counter))
+                          (= 0 (alist-ref #\[ counter))
+                          (= 0 (alist-ref #\{ counter)))
+                     (begin (set! out (cons (edn-parse-tokenlist (edn-tokenize cache)) out))
+                            (set! cache ""))])])
+      (set! in (cdr in))))
+  
   (define (edn-read-file file)
-    (for-each edn-read-string (call-with-input-file read-file)))
+    (let [(res "")]
+      (read-token (lambda (in)
+                    (set! res (string-append res (->string in))) #t)
+                  (open-input-file* (file-open "test.edn" open/rdonly)))
+      (edn-read-string res)))
   ;;(define (write-edn-string string))
   ;;(define (write-edn-file file))
   

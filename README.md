@@ -16,7 +16,9 @@ Data type conversions
 
 API
 ---
- *TODO*
+
+ * (edn-read-file filename) Reads the contents of the file and returns a list where each entry is a top-level form of the .edn file.
+ * (edn-read-string string) Reads a string containing one EDN-top-level-form and returns the scheme equivalent of it.
 
 Other tasks
 -----------
@@ -25,6 +27,21 @@ Other tasks
  * Tag handling
  * Chicken egg
  * EDN writing
+
+Releases
+--------
+
+ * **0.2**: Can read EDN-files and -strings. EDN tags are not working yet.
+
+Roadmap
+-------
+
+ * **0.3**: EDN tags work.
+ * **0.3.1**: Code cleanup with performance improvements.
+ * **0.4**: Can write scheme data structures (lists,vectors,hashmaps) to EDN.
+ * **0.4.1**: Code cleanup with performance improvements.
+ * **0.5**: API to write lists and vectors as sets, alists as maps, and tags.
+ * **0.5.1**: Code cleanup.
 
 About
 -----
