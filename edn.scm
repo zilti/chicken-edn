@@ -3,8 +3,8 @@
    edn-read-file edn-read-string edn-tokenize edn-parse-tokenlist
   )
 
-  (import chicken scheme extras data-structures posix)
-  (require-extension srfi-1 srfi-13 srfi-69)
+  (import chicken scheme)
+  (require-extension srfi-1 srfi-13 srfi-69 extras data-structures posix)
 
   ;; EDN Reading
   (define handlers (list))
@@ -188,12 +188,14 @@
                                [else (cc symbol:)])])])))
 
   (define (edn-read-string string)
-    (do [(in (string->list string))
+    (do [(in (string->list (string-delete #\newline string)))
          (fst #t)
          (cache "")
          (counter '((#\( . 0) (#\[ . 0) (#\{ . 0)))
          (out (list))]
-        [(null-list? in) (reverse out)]
+        [(null-list? in) (case (length out)
+                           [(1) (car (reverse out))]
+                           [else (reverse out)])]
       (case (car in)
         [(#\( #\[ #\{) (set! counter (alist-update (car in) (+ (alist-ref (car in) counter) 1) counter))]
         [(#\)) (set! counter (alist-update #\( (- (alist-ref #\( counter) 1) counter))]
@@ -204,19 +206,16 @@
         [(#t) (set! fst #f)]
         [else (cond [(and (= 0 (alist-ref #\( counter))
                           (= 0 (alist-ref #\[ counter))
-                          (= 0 (alist-ref #\{ counter)))
+                          (= 0 (alist-ref #\{ counter))
+                          (not (char-whitespace? (car in))))
                      (begin (set! out (cons (edn-parse-tokenlist (edn-tokenize cache)) out))
                             (set! cache ""))])])
       (set! in (cdr in))))
   
   (define (edn-read-file file)
-    (let [(res "")]
-      (read-token (lambda (in)
-                    (set! res (string-append res (->string in))) #t)
-                  (open-input-file* (file-open "test.edn" open/rdonly)))
+    (let [(res (read-token (lambda (in) #t)
+                           (open-input-file* (file-open file open/rdonly))))]
       (edn-read-string res)))
-  ;;(define (write-edn-string string))
-  ;;(define (write-edn-file file))
-  
-
+  ;;(define (edn-write-string string))
+  ;;(define (edn-write-file file))  
 )

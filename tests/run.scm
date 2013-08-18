@@ -18,5 +18,9 @@
             (test "Map conversion" '((1 . 2) ("3" . "4")) (edn-parse-tokenlist '(#\{ 1 2 "3" "4" #\})))
             (test "Nested lists" '(1 2 (3 4 (5 6) 7) 8) (edn-parse-tokenlist '(#\( 1 2 #\( 3 4 #\( 5 6 #\) 7 #\) 8 #\)))))
 
+(test-group "edn-read-string"
+            (test "If only one entry, must not return a nested list" '(1 2 3) (edn-read-string "(1 2 3)"))
+            (test "Two lists" '((1 2 3)(4 5 6)) (edn-read-string "(1 2 3)(4 5 6)"))
+            (test "Two lists, spaced" '((1 2 3) (4 5 6)) (edn-read-string "(1 2 3) (4 5 6)")))
 (test-exit)
 
