@@ -2,4 +2,3 @@
 
 (repo git "git://github.com/zilti/chicken-edn.git")
 (uri targz "https://github.com/zilti/chicken-edn/archive/{egg-release}.tar.gz")
-(release "0.2")
