@@ -57,4 +57,4 @@ Roadmap
 
 About
 -----
-Written by Daniel Ziltener. EDN written by Rick Hickey. The EDN specification is available at [https://github.com/edn-format/edn](https://github.com/edn-format/edn).
+Written by Daniel Ziltener. EDN written by Rich Hickey. The EDN specification is available at [https://github.com/edn-format/edn](https://github.com/edn-format/edn).
