@@ -3,7 +3,7 @@ chicken-edn
 
 An [EDN](https://github.com/edn-format/edn) reader and writer for chicken scheme.
 
-In this release this implementation can only read EDN strings and files. EDN Tags and EDN-writing will follow soon.
+In this release this implementation can only read EDN strings and files. EDN-writing will follow soon.
 
 Data type conversions
 ---------------------
@@ -14,18 +14,13 @@ Data type conversions
  * Vectors are srfi-4 vectors.
  * EDN Sets get converted to lists.
  * true = #t, false = #f, nil = #f.
- * TODO The #inst tag requires [egg rfc3339](http://wiki.call-cc.org/eggref/4/rfc3339). You'll have to manually register a handler, but a convenience function is provided. (By default it is read as a String)
+ * #inst is read as a String. *TODO* For #inst tag add [egg rfc3339](http://wiki.call-cc.org/eggref/4/rfc3339) support. You'll have to manually register a handler, but a convenience function will be provided.
  * #uuid is read as a String.
 
 Missing reader functionality
 ----------------------------
-The reader doesn't yet fully support those EDN features. Denoted in parens is the target release when they'll be fixed.
-
- * DONE Built-in tags #_ #inst and #uuid *(0.3)*
- * DONE Add user-specifiable tags *(0.3)*
- * DONE `nil` is not handled yet and will be recognized as a symbol. *(0.3)*
- * DONE Numbers have to start with a digit. *(0.3)*
- * DONE The discard tag #_ has to be separated by whitespace from the element to be discarded. *(0.3)*
+Should you notice missing functionality of the reader, plesase use [the issues page](https://github.com/zilti/chicken-edn/issues) to report
+it and provide a test case.
 
 API
 ---
