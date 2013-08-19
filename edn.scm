@@ -129,9 +129,12 @@
 
   (define (parse-number in)
     (string->number
-     (cond ((string-suffix? "N" in) (substring in 0 (- (string-length in) 1)))
-           ((string-suffix? "M" in) (substring in 0 (- (string-length in) 1)))
-           (else in))))
+     (let* [(num (cond [(string-suffix? "N" in) (substring in 0 (- (string-length in) 1))]
+                       [(string-suffix? "M" in) (substring in 0 (- (string-length in) 1))]
+                       [else in]))]
+       (cond [(string-prefix? "." num) (string-append "0" num)]
+             [(string-prefix? "+" num) (substring num 1 (string-length num))]
+             [else num]))))
 
   (define (char-contains? c chars)
     (let [(c? #f)]
@@ -140,7 +143,7 @@
                               (else in)))
            chars)
       c?))
-
+  
   (define (edn-tokenize in)
     (do [(cur-seq #f)
          (cache (list))
@@ -157,17 +160,17 @@
                                cur-seq)))
       (case cur-seq
         ;; Sequence filling / termination
-        ((end-string:) (set! cur-seq #f))
-        ((string:) (cond [(and (char=? next #\") (not (char=? #\\ (car cache))))
-                          (begin (set! cur-seq end-string:)
+        [(end-seq:) (set! cur-seq #f)]
+        [(string:) (cond [(and (char=? next #\") (not (char=? #\\ (car cache))))
+                          (begin (set! cur-seq end-seq:)
                                  (set! out (cons (reverse-list->string cache) out))
                                  (set! cache (list)))]
                          ;; Properly insert escaped "
                          [(and (char=? next #\") (char=? #\\ (car cache)))
                           (set! cache (cons #\" (cdr cache)))]
-                         [else (set! cache (cons next cache))]))
+                         [else (set! cache (cons next cache))])]
 
-        ((char:) (cond [(or (char-contains? next (append seq-delimiters (list #\space))) (char-whitespace? next))
+        [(char:) (cond [(or (char-contains? next (append seq-delimiters (list #\space))) (char-whitespace? next))
                         (begin (set! cur-seq #f)
                                (let [(ch (cond [(> (length cache) 1)
                                                 (case (reverse-list->string cache)
@@ -179,39 +182,45 @@
                                                [else (car cache)]))]
                                  (set! out (cons ch out)))
                                (set! cache (list)))]
-                       [else (set! cache (cons next cache))]))
-
-        ((reader-tag:) (cond
+                       [else (set! cache (cons next cache))])]
+        
+        [(reader-tag:) (cond
                         [(char-contains? next (append seq-delimiters (list #\space #\,)))
                          (begin (set! cur-seq #f)
                                 (set! out (cons (cons edn/reader-tag: (string->keyword (reverse-list->string cache))) out))
                                 (set! cache (list)))]
-                        [else (set! cache (cons next cache))]))
+                        [else (cond [(char=? next #\_)
+                                     (begin (set! cache (cons next cache))
+                                            (set! out (cons (cons edn/reader-tag: (string->keyword (reverse-list->string cache))) out))
+                                            (set! cache (list))
+                                            (set! cur-seq end-seq:))]
+                                    [else (set! cache (cons next cache))])])]
         
-        ((symbol:) (cond
+        [(symbol:) (cond
                     [(char-contains? next (append seq-delimiters (list #\space #\,)))
                      (begin (set! cur-seq #f)
                             (set! out (cons (let [(x (reverse-list->string cache))]
                                               (cond 
                                                [(equal? x "true") #t]
                                                [(equal? x "false") #f]
+                                               [(equal? x "nil") #f]
                                                [else (string->symbol x)])) out))
                             (set! cache (list)))]
-                    [else (set! cache (cons next cache))]))
+                    [else (set! cache (cons next cache))])]
         
-        ((keyword:) (cond
+        [(keyword:) (cond
                      [(char-contains? next (append seq-delimiters (list #\space #\" #\,)))
                       (begin (set! cur-seq #f)
                              (set! out (cons (parse-keyword (reverse-list->string cache)) out))
                              (set! cache (list)))]
-                     [else (set! cache (cons next cache))]))
+                     [else (set! cache (cons next cache))])]
         
-        ((number:) (cond
+        [(number:) (cond
                     [(char-contains? next (append seq-delimiters (list #\space #\" #\,)))
                      (begin (set! cur-seq #f)
                             (set! out (cons (parse-number (reverse-list->string cache)) out))
                             (set! cache (list)))]
-                    [else (set! cache (cons next cache))])))
+                    [else (set! cache (cons next cache))])])
       ;; Check for collection delimiters
       (cond [(and (char-contains? next seq-delimiters) (equal? #f cur-seq))
              (set! out (cons next out))]
@@ -223,6 +232,8 @@
                                [(char-numeric? next) (cc number:)]
                                [(char-contains? next empty-delimiters) #f]
                                [(char=? next #\\) (set! cur-seq char:)]
+                               [(and (char-contains? next (list #\+ #\- #\.))
+                                     (char-numeric? (car in))) (cc number:)]
                                [else (cc symbol:)])])])))
 
   (define (edn-read-string string)
@@ -254,6 +265,11 @@
     (let [(res (read-token (lambda (in) #t)
                            (open-input-file* (file-open file open/rdonly))))]
       (edn-read-string res)))
+
+  ;; EDN writing
+  (define (scm-kw->edn-kw in)
+    (string-append ":" (substring (->string in) 0 (- (string-length (->string in)) 1))))
+  
   ;;(define (edn-write-string string))
   ;;(define (edn-write-file file))  
 )
