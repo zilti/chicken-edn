@@ -1,5 +1,5 @@
 (include "../edn.scm")
-(import edn)
+(import edn sets)
 (require-extension test)
 
 (edn-register-handler "#test" (lambda (in) (cons '+ in)))
@@ -22,7 +22,8 @@
 (test-group "edn-parse-tokenlist"
             (test "List conversion" '(1 2 "3" "4") (edn-parse-tokenlist '(#\( 1 2 "3" "4" #\))))
             (test "Vector conversion" (list->vector '(1 2 "3" "4")) (edn-parse-tokenlist '(#\[ 1 2 "3" "4" #\])))
-            (test "Set conversion" '(1 2 "3" "4") (edn-parse-tokenlist '(#\# #\{ 1 2 "3" "4" #\})))
+	    ;;(test "Set conversion" '(1 2 "3" "4") (edn-parse-tokenlist '(#\# #\{ 1 2 "3" "4" #\})))
+	    (test-assert "Set conversion" (set= (set 1 2 "3" "4") (edn-parse-tokenlist '(#\# #\{ 1 2 "3" "4" #\}))))
             (test "Map conversion" '((1 . 2) ("3" . "4")) (edn-parse-tokenlist '(#\{ 1 2 "3" "4" #\})))
             (test "Char handling" '(#\a #\b) (edn-parse-tokenlist '(#\( #\a #\b #\))))
             (test "Boolean handling" '(#t #f) (edn-parse-tokenlist '(#\( #t #f #\))))
@@ -37,5 +38,13 @@
             (test "If only one entry, must not return a nested list" '(1 2 3) (edn-read-string "(1 2 3)"))
             (test "Two lists" '((1 2 3)(4 5 6)) (edn-read-string "(1 2 3)(4 5 6)"))
             (test "Two lists, spaced" '((1 2 3) (4 5 6)) (edn-read-string "(1 2 3) (4 5 6)")))
+
+(test-group "edn-write-atoms"
+	    (test "Turns a chicken keyword into an EDN keyword" ":keyword" (scm-kw->edn-kw keyword:))
+	    (test "Write #t" "true" (boolean->edn #t))
+	    (test "Write #f" "false" (boolean->edn #f))
+	    (test "Write nil" "nil" (boolean->edn '()))
+	    (test "Write a char" "\\a" (char->edn #\a))
+	    (test "Write a string" "\"String\"" (string->edn "String")))
 (test-exit)
 

@@ -1,11 +1,15 @@
 (module edn
-  (
-   edn-read-file edn-read-string edn-tokenize edn-parse-tokenlist
-   edn-register-handler edn-remove-handler
-  )
+    (
+     edn-read-file edn-read-string edn-tokenize edn-parse-tokenlist
+		   edn-register-handler edn-remove-handler
+		   ;; writing functions
+		   scm-kw->edn-kw boolean->edn char->edn string->edn
+		   )
 
-  (import chicken scheme)
-  (require-extension srfi-1 srfi-13 srfi-69 extras data-structures posix)
+  (import chicken scheme sequences arrays)
+  (use sequences arrays)
+  (require-extension srfi-1 srfi-13 extras data-structures posix)
+  (import sets)
 
   ;; EDN Reading
   (define handlers (list))
@@ -43,7 +47,11 @@
       (set! alist (alist-update (car stuff) (cadr stuff) alist))
       (set! stuff (cddr stuff))))
 
-  (define construct-set construct-list)
+;;  (define construct-set construct-list)
+  (define (construct-set in)
+    (fold (lambda (elem init)
+  	     (set-add! elem init) init)
+  	   (make-set) in))
 
   (define (apply-tag tag struct)
     (let [(fn (alist-ref tag handlers))]
@@ -66,15 +74,15 @@
       (case colltype
         [(#f pre-set:)
          (set! colltype
-               (case token
-                 [(#\() list:]
-                 [(#\[) vector:]
-                 [(#\{) (cond [(eq? colltype pre-set:) set:]
-                              [else map:])]
-                 [(#\#) (cond [(char=? #\{ (car in)) pre-set:]
-                              [else (error "Invalid EDN. # outside a collection form used not for starting a set.")])]
-                 [else (cond [(char-whitespace? token)]
-                             [else (error (string-append "Invalid EDN. Data outside a collection form: " (->string token) " (colltype: " (->string colltype) ")\n"))])]))]
+	   (case token
+	     [(#\() list:]
+	     [(#\[) vector:]
+	     [(#\{) (cond [(eq? colltype pre-set:) set:]
+			  [else map:])]
+	     [(#\#) (cond [(char=? #\{ (car in)) pre-set:]
+			  [else (error "Invalid EDN. # outside a collection form used not for starting a set.")])]
+	     [else (cond [(char-whitespace? token)]
+			 [else (error (string-append "Invalid EDN. Data outside a collection form: " (->string token) " (colltype: " (->string colltype) ")\n"))])]))]
         [else (case token
                 [(#\( #\[ #\{) (cond [(eq? tag omit) (set! tag #f)]
                                      [else (begin
@@ -267,9 +275,65 @@
       (edn-read-string res)))
 
   ;; EDN writing
+  ;; ===========
+  (define (kw->reader-tag in)
+    (let ((in (->string in)))
+      (substring in 3 (string-length in))))
+  
   (define (scm-kw->edn-kw in)
-    (string-append ":" (substring (->string in) 0 (- (string-length (->string in)) 1))))
+    (string-append ":" (->string in)))
+
+  (define (boolean->edn in)
+    (case in
+      ((#t) "true")
+      ((#f) "false")
+      (else "nil")))
+
+  (define (char->edn in)
+    (string-append "\\" (->string in)))
+
+  (define (string->edn in)
+    (string-append "\"" in "\""))
+
+  (define (number->edn in)
+    (->string in))
+
+  (define (sequential->edn subparser ld rd in)
+    (do [(in in)
+  	 (out (list))]
+  	[(empty? in) (string-append ld (->string (reverse out)) rd)]
+      (set! out (subparser (peek in)))
+      (set! in (pop in))))
+  
+  (define (list->edn subparser in)
+    (sequential->edn subparser "(" ")" in))
+
+  (define (vector->edn subparser in)
+    (sequential->edn subparser "[" "]" in))
+
+  (define (set->edn subparser in)
+    (sequential->edn subparser "#{" "}" in))
+
+  (define (readertag? in)
+    (let [(in (->string in))]
+      (and
+       (< 4 (string-length in))
+       (= "edn#" (substring in 0 4)))))
+
+  (define (parse-entry string-writer in)
+    (cond [(string? in) (string->edn in)]
+  	  [(char? in) (char->edn in)]
+  	  [(boolean? in) (boolean->edn in)]
+  	  [(number? in) (number->edn in)]
+  	  [(and (keyword? in)
+  		(readertag? in)) (kw->reader-tag in)]
+  	  [(keyword? in) (scm-kw->edn-kw in)]
+  	  [(list? in) (list->edn parse-entry in)]
+  	  [(vector? in) (vector->edn parse-entry in)]))
+  
+  (define (edn-write-string struct)
+    struct)
   
   ;;(define (edn-write-string string))
   ;;(define (edn-write-file file))  
-)
+  )
