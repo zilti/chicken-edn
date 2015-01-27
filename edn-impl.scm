@@ -1,8 +1,8 @@
 (cond-expand
   (r7rs)
   (chicken (require-extension r7rs srfi-1)))
-
 (use r7rs srfi-1)
+(import (scheme base) r7rs srfi-1)
 
 ;; EDN Reading
 ;; ===========
@@ -164,6 +164,9 @@
 		  (else (car result)))
 	    (cdr result)))))
 
+(define (read-edn)
+  1)
+
 ;; EDN writing
 ;; ===========
 (define (pair->reader-tag subparser in)
@@ -251,4 +254,4 @@
    parse-entry in))
 
 (define (write-edn struct)
-  (display struct (current-output-port)))
+  (display (parse-entry struct) (current-output-port)))

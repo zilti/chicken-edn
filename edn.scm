@@ -4,7 +4,7 @@
 
 (use r7rs srfi-1)
 (define-library edn
-  (import (scheme base))
+  (import (scheme base) r7rs srfi-1)
   (export
    scm-kw->edn-kw boolean->edn char->edn string->edn
    list->edn vector->edn

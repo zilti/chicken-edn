@@ -1,5 +1,6 @@
 (require-extension test r7rs)
 (include "../edn.scm")
+(use edn)
 (import edn)
 
 ;;(edn-register-handler "#test" (lambda (in) (cons '+ in)))
