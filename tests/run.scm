@@ -1,7 +1,6 @@
-(require-extension test r7rs)
+(require-extension test r7rs srfi-1)
 (include "../edn.scm")
 (use edn)
-(import edn)
 
 ;;(edn-register-handler "#test" (lambda (in) (cons '+ in)))
 (define s->k string->keyword)

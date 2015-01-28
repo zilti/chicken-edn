@@ -1,9 +1,3 @@
-(cond-expand
-  (r7rs)
-  (chicken (require-extension r7rs srfi-1)))
-(use r7rs srfi-1)
-(import (scheme base) r7rs srfi-1)
-
 ;; EDN Reading
 ;; ===========
 
@@ -150,7 +144,6 @@
 
 (define (parse-edn state)
   (lambda (struct)
-    (print struct)
     (let* ((struct-handler (cdr
 			    (find (lambda (item) ((car item) (car struct)))
 				  reader-handlers)))

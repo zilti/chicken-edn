@@ -1,6 +1,6 @@
 ;;; -*- scheme -*-
 
-(compile -s -O2 -d1 edn.scm -j edn)
+(compile -s -O2 -d1 edn.scm -j edn -R r7rs -X r7rs)
 (compile -s edn.import.scm -O2 -d0)
 
 (install-extension
