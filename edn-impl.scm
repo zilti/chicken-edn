@@ -1,3 +1,4 @@
+(import chicken)
 ;; EDN Reading
 ;; ===========
 
