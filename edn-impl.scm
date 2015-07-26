@@ -117,7 +117,7 @@
 			       (third compiled))))))))
 
 (define (edn->whitespace subparser input)
-  (cons (read-char input) input))
+  (cons edn/omit: (begin (read-char input) input)))
 
 (define (is-char? a)
   (lambda (b)
@@ -168,8 +168,8 @@
 		  (else (car result)))
 	    (cdr result)))))
 
-(define (read-edn)
-  1)
+(define (read-edn in-port)
+  ((parse-edn '()) in-port))
 
 ;; EDN writing
 ;; ===========
