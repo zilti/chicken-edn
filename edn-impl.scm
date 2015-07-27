@@ -1,5 +1,3 @@
-(import chicken)
-
 ;; EDN Reading
 ;; ===========
 
@@ -186,8 +184,8 @@
 		  (else (car result)))
 	    (cdr result)))))
 
-(define (read-edn)
-  ((parse-edn '()) (current-input-port)))
+(define (read-edn in-port)
+  ((parse-edn '()) in-port))
 
 ;; EDN writing
 ;; ===========
@@ -292,4 +290,5 @@
    parse-entry in))
 
 (define (write-edn struct)
-  (display (parse-entry struct) (current-output-port)))
+  (lambda (out-port)
+    (display (parse-entry struct) out-port)))

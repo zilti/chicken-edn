@@ -10,34 +10,26 @@ Data type conversions
 
  * All kinds of numbers get converted to Scheme numbers, precision suffixes (N and M) get ignored.
  * Keywords :keyword get converted to chicken scheme keywords keyword:.
- * Maps get converted to a-lists. There'll be a global setting to use srfi-69 hashtables instead.
+ * Maps get converted to SRFI 69 hashtables.
  * Vectors are srfi-4 vectors.
- * EDN Sets get converted to lists.
  * true = #t, false = #f, nil = #f.
- * #inst is read as a String. *TODO* For #inst tag add [egg rfc3339](http://wiki.call-cc.org/eggref/4/rfc3339) support. You'll have to manually register a handler, but a convenience function will be provided.
- * #uuid is read as a String.
+ * Reader tag functionality is supported, but no handlers are provided, and it's currently untested.
 
 Missing reader functionality
 ----------------------------
 Should you notice missing functionality of the reader, plesase use [the issues page](https://github.com/zilti/chicken-edn/issues) to report
-it and provide a test case.
+it and, if possible, provide a minimal test case.
 
 API
 ---
 
- * `(edn-read-file filename)` Reads the contents of the file and returns a list where each entry is a top-level form of the .edn file.
- * `(edn-read-string string)` Reads a string containing one EDN-top-level-form and returns the scheme equivalent of it.
- * `(edn-register-handler tag fn)` Register a tag (string, including the #) to a one-argument-function which will get a scheme data structure.
- * `(edn-deregister-handler tag)` Removes the handler associated with tag.
-
-Other tasks
------------
-
- * EDN writing
+* Transforming EDN into Chicken: `(call-with-port <port> read-edn)`
+* Transforming Chicken into EDN: `(call-with-port <port> (write-edn <datastructure>)`
 
 Releases
 --------
 
+ * **0.4**: Complete rewrite. Only relies on R7RS, and SRFI 1, 4, 69 and 88. Uses ports. Reads and writes EDN.
  * **0.3**: EDN tags, including special forms, work. #inst and #uuid both get read as strings. Add nil. Add number prefixes. Add no-space-required to #_ tag.
  * **0.2.1**: Can read EDN-files and -strings. EDN tags are not working yet.
  * **0.2**: Can read EDN-strings with one top-level data structure.
@@ -45,11 +37,6 @@ Releases
 Roadmap
 -------
 
- * **0.3.1**: Code cleanup with performance improvements.
- * **0.4**: Can write scheme data structures (lists,vectors,hashmaps) to EDN.
- * **0.4.1**: Code cleanup with performance improvements.
- * **0.5**: API to write lists and vectors as sets, alists as maps, and tags.
- * **0.5.1**: Code cleanup.
 
 About
 -----

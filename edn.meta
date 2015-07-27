@@ -5,5 +5,5 @@
  (author "Daniel Ziltener")
  (category parsing)
  (license "BSD")
- (depends r7rs srfi-1)
+ (depends r7rs srfi-1 srfi-69)
  (test-depends test))
