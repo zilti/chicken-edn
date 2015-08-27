@@ -3,6 +3,8 @@ chicken-edn
 
 An [EDN](https://github.com/edn-format/edn) reader and writer for chicken scheme.
 
+The reader currently doesn't support reader tags.
+
 Data type conversions
 ---------------------
 
@@ -10,8 +12,7 @@ Data type conversions
  * Keywords :keyword get converted to chicken scheme keywords keyword:.
  * Maps get converted to SRFI 69 hashtables.
  * Vectors are srfi-4 vectors.
- * true = #t, false = #f, nil = #f.
- * Reader tag functionality is supported, but no handlers are provided, and it's currently untested.
+ * true = #t, false = #f, nil = '()
 
 Missing reader functionality
 ----------------------------
@@ -21,8 +22,8 @@ it and, if possible, provide a minimal test case.
 API
 ---
 
-* Transforming EDN into Chicken: `(call-with-port <port> read-edn)`
-* Transforming Chicken into EDN: `(call-with-port <port> (write-edn <datastructure>)`
+* Transforming EDN into Chicken: `(with-input-from-port <port> read-edn)`
+* Transforming Chicken into EDN: `(with-output-to-port <port> (write-edn <datastructure>))`
 
 Releases
 --------

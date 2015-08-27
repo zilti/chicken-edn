@@ -9,7 +9,8 @@
      (cond ((or (eq? #!eof (peek-char input))
 		(end-fn result pile input))
 	    (cons (finalizer (reverse result))
-		  (if (or (eq? #!eof input)
+		  (if (or (not (char-ready? input))
+			  (char=? #\# (peek-char input))
 			  (char=? #\) (peek-char input))
 			  (char=? #\] (peek-char input))
 			  (char=? #\} (peek-char input)))
@@ -37,6 +38,7 @@
 	       (char=? #\: (peek-char input)))
 	     (lambda (result pile input)
 	       (or (char-whitespace? (peek-char input))
+		   (char=? #\# (peek-char input))
 		   (char=? #\, (peek-char input))
 		   (char=? #\) (peek-char input))
 		   (char=? #\] (peek-char input))
@@ -47,16 +49,23 @@
   (edn->atom (lambda (result pile input) #f)
 	     (lambda (result pile input)
 	       (or (char-whitespace? (peek-char input))
+		   (char=? #\# (peek-char input))
 		   (char=? #\, (peek-char input))
 		   (char=? #\) (peek-char input))
 		   (char=? #\] (peek-char input))
 		   (char=? #\} (peek-char input))))
-	     (lambda (in) (string->symbol (list->string in)))))
+	     (lambda (in) (let ((res-string (list->string in)))
+			    (cond
+			     ((equal? "true" res-string) #t)
+			     ((equal? "false" res-string) #f)
+			     ((equal? "nil" res-string) '())
+			     (else (string->symbol res-string)))))))
 
 (define edn->number
   (edn->atom (lambda (result pile input) #f)
 	     (lambda (result pile input)
 	       (or (char-whitespace? (peek-char input))
+		   (char=? #\# (peek-char input))
 		   (char=? #\M (peek-char input))
 		   (char=? #\N (peek-char input))
 		   (char=? #\, (peek-char input))
@@ -184,8 +193,8 @@
 		  (else (car result)))
 	    (cdr result)))))
 
-(define (read-edn in-port)
-  ((parse-edn '()) in-port))
+(define (read-edn)
+  (second ((parse-edn '()) (current-input-port))))
 
 ;; EDN writing
 ;; ===========
@@ -290,5 +299,5 @@
    parse-entry in))
 
 (define (write-edn struct)
-  (lambda (out-port)
-    (display (parse-entry struct) out-port)))
+  (lambda ()
+    (display (parse-entry struct) (current-output-port))))

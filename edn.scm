@@ -13,7 +13,5 @@
 	  (srfi 69)
 	  (chicken))
   (export
-   scm-kw->edn-kw boolean->edn char->edn string->edn
-   list->edn vector->edn
    parse-entry write-edn read-edn)
   (include "edn-impl.scm"))
