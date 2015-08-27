@@ -3,8 +3,6 @@ chicken-edn
 
 An [EDN](https://github.com/edn-format/edn) reader and writer for chicken scheme.
 
-In this release this implementation can only read EDN strings and files. EDN-writing will follow soon.
-
 Data type conversions
 ---------------------
 
