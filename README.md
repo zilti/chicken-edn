@@ -22,7 +22,7 @@ API
 
 * Transforming EDN into Chicken: `(with-input-from-port <port> read-edn)`
 * Transforming Chicken into EDN: `(with-output-to-port <port> (write-edn <datastructure>))`
-* Using reader tags: the library contains a public a-list `tag-handlers`. To register a handler, add an a-list entry where the key is the tag without `\#` and as a keyword, and the value a one-argument procedure.
+* Using reader tags: the library contains a public a-list `tag-handlers`. To register a handler, add an a-list entry where the key is the tag without `#` and as a keyword (e.g. `#keywordify` becomes `keywordify:`), and the value a one-argument procedure.
 
 Releases
 --------
