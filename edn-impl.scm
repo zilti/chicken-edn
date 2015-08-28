@@ -78,7 +78,7 @@
   (edn->atom (lambda (result pile input)
 	       (char=? #\# (peek-char input)))
 	     (lambda (result pile input)
-	       (or (char-whitespace? (peek-char input))
+	       (or (char-whitespace? (peek-char input)) 
 		   (char=? #\( (peek-char input))
 		   (char=? #\[ (peek-char input))
 		   (and (not (null? pile))
@@ -155,7 +155,7 @@
 	 (fun x))))
 
 (define tag-handlers
-  (list))
+  (list (cons _:  (lambda (input) edn/omit:))))
 
 (define reader-handlers
   (list (cons (is-char? #\() edn->list)
@@ -172,9 +172,16 @@
 	(cons (guard-charcheck char-whitespace?) edn->whitespace)))
 
 (define (is-tag? in)
-  (and (not (list? in))
-       (pair? in)
-       (equal? (car in) edn/tag:)))
+  (and (pair? in)
+       (pair? (car in))
+       (equal? (caar in) edn/tag:)
+       (contains-tag-handler? (car in))))
+
+(define (contains-tag-handler? tag)
+  (assoc (cdr tag) tag-handlers))
+
+(define (call-tag tag data)
+  ((cdr (assoc (cdr tag) tag-handlers)) data))
 
 (define (parse-edn state)
   (lambda (in-port)
@@ -182,13 +189,12 @@
 			    (find (lambda (item) ((car item) (peek-char in-port)))
 				  reader-handlers)))
 	   (result (struct-handler (parse-edn state) in-port)))
-      (list (if (is-tag? (car result))
+      (list (if (is-tag? result)
 		(parse-edn result)
 		(parse-edn '()))
-	    (cond ((and (is-tag? state)
-			(assq state tag-handlers))
-		   ((assq state tag-handlers) (car result)))
-		  ((is-tag? (car result))
+	    (cond ((is-tag? state)
+		   (call-tag (car state) (car result)))
+		  ((is-tag? result)
 		   edn/omit:)
 		  (else (car result)))
 	    (cdr result)))))

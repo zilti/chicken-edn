@@ -13,5 +13,5 @@
 	  (srfi 69)
 	  (chicken))
   (export
-   parse-entry write-edn read-edn)
+   parse-entry tag-handlers write-edn read-edn)
   (include "edn-impl.scm"))

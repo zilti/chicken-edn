@@ -1,4 +1,4 @@
-(require-extension r7rs srfi-69 srfi-78 srfi-88 srfi-1 ports trace)
+(require-extension r7rs srfi-69 srfi-78 srfi-88 srfi-1 ports trace )
 (include "../edn-impl.scm")
 
 (define s->k string->keyword)
@@ -36,5 +36,16 @@
 		  (equal? (hash-table-ref b b:) i-am:)
 		  (equal? (hash-table-ref b c:) `(a list)))))
        (alist->hash-table '((a: . "Hi") (b: . i-am:) (c: . (a list)))))
+
+(print "Tag handling")
+(trace parse-edn contains-tag-handler? call-tag is-tag?)
+(check (wifs "(1 2 #_ 3 4)" read-edn) => '(1 2 4))
+
+(set! tag-handlers (cons (cons keywordify:
+			       (lambda (input)
+				 (print "Got called: " input)
+				 (string->keyword (symbol->string input))))
+			 tag-handlers))
+(check (wifs "(asdf #keywordify qwertz)" read-edn) => '(asdf qwertz:))
 
 (quit)
