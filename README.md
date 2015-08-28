@@ -1,3 +1,5 @@
+# [This repository has permanently moved to BitBucket.](https://bitbucket.org/zilti/chicken-edn)
+
 chicken-edn
 ===========
 
