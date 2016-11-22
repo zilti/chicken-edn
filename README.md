@@ -1,4 +1,4 @@
-# [This repository has permanently moved to BitBucket.](https://bitbucket.org/zilti/chicken-edn)
+# [This repository has permanently moved to BitBucket.](https://bitbucket.org/zilti/edn)
 
 chicken-edn
 ===========
